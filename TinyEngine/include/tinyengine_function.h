@@ -176,6 +176,184 @@ tinyengine_status element_mult_nx1(const q7_t *input, const uint16_t input_h, co
                                    const int32_t out_activation_min, const int32_t out_activation_max,
                                    const float output_scale, q7_t *output);
 
+
+// Shiming: Filling in left-out function declarations
+tinyengine_status max_pooling(const q7_t* input, const uint16_t input_h, const uint16_t input_w,
+		const uint16_t input_c,	const uint16_t sample_h, const uint16_t sample_w,
+		const uint16_t output_h, const uint16_t output_w, const int32_t out_activation_min,
+        const int32_t out_activation_max, q7_t* output);
+
+// Shiming: Custom functions
+int8_t *mat_mult_kernel_s8_s16_one_column(const int8_t *input_a,
+							const int16_t *input_b,
+							const uint16_t output_ch,
+							const int32_t *out_shift,
+							const int32_t *out_mult,
+							const int32_t out_offset,
+							const int16_t activation_min,
+							const int16_t activation_max,
+							const uint16_t num_col_a,
+							const int32_t *const output_bias,
+							int8_t *out_0);
+
+tinyengine_status convolve_s8_kernel1_stride2(const int8_t *input, const uint16_t input_x,
+		const uint16_t input_y, const uint16_t input_ch, const int8_t *kernel,
+		const int32_t *bias, const int32_t *output_shift,
+		const int32_t *output_mult, const int32_t out_offset,
+		const int32_t input_offset, const int32_t out_activation_min,
+		const int32_t out_activation_max, int8_t *output, const uint16_t output_x,
+		const uint16_t output_y, const uint16_t output_ch, int16_t *runtime_buf);
+
+
+tinyengine_status convolve_s8_kernel3_stride1_nopad(
+        const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, const int8_t *kernel, const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf);
+
+tinyengine_status convolve_s8_kernelnx1_stride1_nopad(
+        const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, 
+        const uint16_t kernel_y, const int8_t *kernel, 
+        const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf);
+
+tinyengine_status convolve_s8_kernel3_stride1_pad1(
+		const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, const int8_t *kernel, const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf, int8_t pad_value
+);
+
+tinyengine_status convolve_s8_kernel3_stride1_pad1_oddch(
+		const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, const int8_t *kernel, const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf, int8_t pad_value);
+
+
+tinyengine_status convolve_s8_kernel3_stride2_padoffset1(
+		const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, const int8_t *kernel, const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf, int8_t pad_value
+);
+
+tinyengine_status convolve_s8_kernel3_stride2_padoffset1_oddch(
+		const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, const int8_t *kernel, const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf, int8_t pad_value
+);
+
+tinyengine_status convolve_s8_kernelnxn_stridenxn_padnxn(
+		const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, 
+		const uint16_t kernel_n,
+		const uint16_t stride_n,
+		const uint16_t pad_n,
+		const int8_t *kernel, 
+		const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf, int8_t pad_value
+);
+
+tinyengine_status quantize_float32_to_int8(
+		const char *input, const uint16_t size,
+		const float scale, const int32_t zero_point,
+		const int32_t min_val, const int32_t max_val,
+		int8_t *output);
+
+tinyengine_status requantize_int8_to_uint8(
+		const char *input, const uint16_t size,
+		const int32_t effective_scale_multiplier, 
+		const int32_t effective_scale_shift,
+		const int32_t input_zeropoint, const int32_t output_zeropoint,
+		const int32_t min_val, const int32_t max_val,
+		uint8_t *output);
+
+tinyengine_status requantize_uint8_to_int8(
+		const char *input, const uint16_t size,
+		const int32_t effective_scale_multiplier, 
+		const int32_t effective_scale_shift,
+		const int32_t input_zeropoint, const int32_t output_zeropoint,
+		const int32_t min_val, const int32_t max_val,
+		int8_t *output);
+
+tinyengine_status softmax_int8(
+		int8_t *input, const uint16_t size, 
+		const int32_t input_multiplier, const int32_t input_left_shift,
+		const int32_t diff_min, int8_t *output);
+
+tinyengine_status reduce_max_axis_1_2_int8(
+		const int8_t *input, const uint16_t input_h, 
+		const uint16_t input_w, const uint16_t input_c,
+		// const uint16_t output_size,
+		int8_t *output);
+
+tinyengine_status reduce_mean_axis_1_2_int8(
+		const int8_t *input, const uint16_t input_h, 
+		const uint16_t input_w, const uint16_t input_c,
+		const int32_t multiplier, const int32_t shift,
+		const int32_t input_zeropoint,
+		const int32_t output_zeropoint,
+		const int32_t min_val, const int32_t max_val,
+		int8_t *output);
+
+tinyengine_status max_pooling_filternxn_stridenxn_padnxn(const q7_t* input, 
+		const uint16_t input_h, const uint16_t input_w, const uint16_t input_c,
+		const uint16_t filter_len, const uint16_t stride_len, const uint16_t pad_len,
+		const uint16_t output_h, const uint16_t output_w, const int32_t out_activation_min,
+        const int32_t out_activation_max, q7_t* output, int8_t pad_value);
+
+tinyengine_status transpose_axis_1_2_int8(
+		const int8_t *input, const uint16_t input_h, 
+        const uint16_t input_w, const uint16_t input_c, 
+        int8_t *output);
+
+tinyengine_status add_broadcast_axis_1_2(
+      const int16_t input_h, const int16_t input_w, const int16_t input_c, 
+      ADD_params* params, const int8_t* input1_data,
+	  const int8_t* input2_data, int8_t* output_data);
+
+tinyengine_status mul_broadcast_axis_1_2(
+      const int16_t input_h, const int16_t input_w, const int16_t input_c, 
+      const int32_t input1_offset, const int32_t input2_offset,
+      const int32_t output_offset,
+      const int32_t output_multiplier, const int32_t output_shift,
+      const int8_t* input1_data, const int8_t* input2_data, 
+	  const int32_t output_activation_min, const int32_t output_activation_max,
+      int8_t* output_data);
+
 #include "fp_requantize_op.h"
 #include "genInclude.h"
 //#include "int8_bp_op.h"
