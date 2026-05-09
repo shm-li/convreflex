@@ -27,6 +27,8 @@ from .TfliteConvertor import TfliteConvertor
 def GenerateSourceFilesFromTFlite(
     tflite_path,
     life_cycle_path=None,
+    redundancy_omitting_mode="off", # "off", "clamping_predicting"
+    termination_check_file=None, # a pkl file to specify the checks in kernels
 ):
     use_inplace = True
 
@@ -66,6 +68,8 @@ def GenerateSourceFilesFromTFlite(
             tflite_op=False,
             dummy_address=False,
             outputTables=outTable,
+            redundancy_omitting_mode=redundancy_omitting_mode,
+            termination_check_file=termination_check_file,
         )
         # set detection outputs before codegen if any
         code_generator.codeGeneration()

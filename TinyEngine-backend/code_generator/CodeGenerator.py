@@ -20,6 +20,9 @@ import os
 
 from .constant import FUSE_SGD_UPDATE_STR, FUSHION_CONFIG
 from .OpGenerator import OpGenerator
+from .convreflex_utils import translate_to_nonscaled_shortcut_params
+
+import pickle
 
 Codegen_root = "./codegen/"
 include_path = Codegen_root + "Include/"
@@ -52,6 +55,8 @@ class CodeGenerator:
         outputTables=None,
         detectionUtils=None,
         is_training=False,
+        redundancy_omitting_mode="off", # "off", "clamping_predicting"
+        termination_check_file=None,
     ):
         self.MemSche = memsche
 
@@ -76,6 +81,25 @@ class CodeGenerator:
         self.outputTables = outputTables
         self.detectionUtils = detectionUtils
         self.is_training = is_training
+        self.redundancy_omitting_mode = redundancy_omitting_mode
+
+        if redundancy_omitting_mode == "clamping_predicting":
+            if termination_check_file:
+                # Read shortcut information from the file provided
+                with open(termination_check_file, 'rb') as f:
+                    f_load = pickle.load(f)
+                    self.pred_termination_check_pos = f_load["per_layer_pos"]
+                    self.pred_termination_check_type = f_load["per_layer_type"]
+                    self.pred_termination_check_threshold \
+                            = f_load["per_layer_threshold"]
+            else:
+                # User wants clamping prediction but has no file to provide. 
+                # Code for profiling will be generated.
+                self.pred_termination_check_pos = None
+        elif redundancy_omitting_mode == "off":
+            pass
+        else:
+            raise RuntimeError("Unrecognized redundancy omitting option")
 
     def _readOnly(self, name):
         if self.outputTables is None or name is None:
@@ -135,6 +159,9 @@ void update_SGD(float learning_rate){\n"""
 
         # generate inference-only invoke function
         self._genInvokeInf()
+
+        # generate code where redundant computations are omitted
+        self._genInvokeInfRedOmit()
 
         # generate SGD update if any
         self._generateSGD()
@@ -472,6 +499,59 @@ void invoke_1patch(uint16_t pad_t, uint16_t pad_b, uint16_t pad_l ,uint16_t pad_
         string = "}\n"
         fp.write(string)
 
+
+    # Mostly the same as _genInvokeInf
+    def _genInvokeInfRedOmit(self):
+        fp = self.source_handle
+        string = "void invoke_inf_omitting_redundancy(){\n"
+        fp.write(string)
+
+        schedule = self.MemSche
+        for i, op in enumerate(schedule.layer):
+            layer_info = op.get_layer_info()
+            string = "/* layer " + str(i) + ":" + layer_info["op"] + " */\n"
+            # Shiming: write OP number.
+            #   can be disabled with -DON_BOARD_TEST
+            string += "#ifndef ON_BOARD_TEST\n printf(\"=== OP {:d}, {:s} ===\\r\\n\"); fflush(stdout); \n #endif\n".format(i, layer_info["op"])
+            fp.write(string)
+
+            if layer_info["op"] == "CONV_2D":
+                if (
+                    self.FP_output
+                    and "effective_scale" in layer_info
+                    and layer_info["output_scale"] is not None
+                    and layer_info["effective_scale"] is not None
+                ):
+                    use_fp = True
+                else:
+                    use_fp = False
+                
+                string = self._genOpstr(
+                    op,
+                    self.unsigned_input,
+                    use_fp,
+                    use_aggressive_unroll,
+                    use_hard_switsh,
+                    self.fp_requantize,
+                    self.tflite_op,
+                    self.dummy_address,
+                    # Codegen w/ clamping prediction?
+                    (self.redundancy_omitting_mode == "clamping_predicting") \
+                        and layer_info["has_meaningful_checks"],
+                )
+                fp.write(string)
+
+            elif layer_info["op"] == "DEPTHWISE_CONV_2D":
+                string = self._genOpstr(op, self.fp_requantize)
+                fp.write(string)
+            else:
+                string = self._genOpstr(op)
+                fp.write(string)
+
+        string = "}\n"
+        fp.write(string)
+
+
     def _getBufferIndex(self, location):
         if location == "front":
             return 0
@@ -575,6 +655,52 @@ signed char* getOutput() {
                             layer_info["weight_name"],
                             self._readOnly(layer_info["weight_name"]),
                         )
+
+                if self.redundancy_omitting_mode == "clamping_predicting":
+                    n_kernels = layer_info["output_c"]
+                    if self.pred_termination_check_pos:
+                        if i > len(self.pred_termination_check_pos) - 1:
+                            raise RuntimeError("file length does not match")
+                        # Get the steps to check for termination, and the
+                        #  boundary intermediate val that triggers termination.
+                        # The threshold data in the files are recorded
+                        #   in profiling phase. They are scaled to the "actual"
+                        #   values that a NN layer produces, to reduce the
+                        #   profiled data size, since they have less digits.
+                        # These are not the intermediate value that a 
+                        #   convolution kernel will see before it finishes. 
+                        #   Here we turn them into their non-scaled format,
+                        #   so when checking whether or not to trigger a
+                        #   shortcut, the intermediate value needs no scaling.
+                        tsteps, tbounds \
+                                = translate_to_nonscaled_shortcut_params(
+                                    self.pred_termination_check_pos[i], 
+                                    self.pred_termination_check_threshold[i], 
+                                    self.pred_termination_check_type[i],
+                                    n_kernels,
+                                    layer_info["effective_scale"],
+                                    int(layer_info["output_zero_point"])
+                                )
+                        if tbounds != []:
+                            step_16bit = self._parseSaturationPrediction(
+                                self.parse_count,
+                                tsteps,
+                                tbounds
+                            )
+                            layer_info["step_16bit"] = step_16bit # need 16b?
+                            layer_info["has_meaningful_checks"] = True
+                        else: 
+                            # All channels have 0 checks. Do vanilla codegen
+                            layer_info["has_meaningful_checks"] = False
+                    else: # No config provided by user; use default shortcuts
+                        tsteps = [0 for _ in range(n_kernels)]
+                        tbounds = []
+                        _ = self._parseSaturationPrediction(
+                            self.parse_count,
+                            tsteps,
+                            tbounds
+                        )
+                        layer_info["has_meaningful_checks"] = True
 
                 if "bias_name" in layer_info:
                     self._parseBias(
@@ -915,6 +1041,34 @@ signed char* getOutput() {
             return True
         return False
 
+
+    # Write information for the termination checks and shortcuts
+    def _parseSaturationPrediction(self, Lindex, tsteps, tbounds):
+        step_16bit = False
+        for _, value in enumerate(tsteps):
+            if value > 255:
+                step_16bit = True
+                break
+
+        fp = self.header_handle
+        # The step number may be a uint16 if the kernel is too large
+        type_str = "uint16_t" if step_16bit else "uint8_t"
+        string = f"const " + type_str + " tsteps" + str(Lindex) \
+                        + "[" + str(len(tsteps)) + "] = {"
+        fp.write(string)
+        for _, value in enumerate(tsteps):
+            assert 0 <= value <= (65535 if step_16bit else 255), "Step value overflow!"
+            value = int(value)
+            fp.write(str(value) + ", ")
+        fp.write("};\n")
+        string = f"int32_t tbounds" + str(Lindex) + "[" + str(len(tbounds)) + "] = {"
+        fp.write(string)
+        for _, value in enumerate(tbounds):
+            value = int(value)
+            fp.write(str(value) + ", ")
+        fp.write("};\n")
+
+        return step_16bit
 
 
     def _parseoffsetBias(self, Lindex, bias, input_offset, weight, channel, bias_name=None, is_const=True):

@@ -63,6 +63,8 @@ default_params = {
     "output2_dtype": "int8",
     # for partial channel update
     "first_k_channel": None,
+    # Shiming: add activation function params
+    "fused_activation_function": None,
 }
 
 
@@ -152,6 +154,7 @@ class Conv2d(basicOperator):
         fp_requantize: bool = False,
         tflite_op: bool = False,
         dummy_address: bool = False,
+        enable_clamping_prediction = False,
     ):
         string = ""
         params = self.params
@@ -370,6 +373,13 @@ class Conv2d(basicOperator):
                                               padding_h_offset, padding_w_offset
                                           ))
 
+            if enable_clamping_prediction:
+                # In some cases the kernel is too large, and this must be 16bit
+                if ("step_16bit" in params) and params["step_16bit"]:
+                    function_name += "_uint16_steps"
+                function_name += "_clamping_pred"
+
+
             if fp_requantize and not ("is_patch" in params and params["is_patch"] and kernel_h > 1):
                 function_name += "_fpreq"
 
@@ -396,9 +406,11 @@ class Conv2d(basicOperator):
             parsed_idx = str(params["parsed_trainable"])
             # Shiming:
             if function_name in ["convolve_s8_kernelnx1_stride1_nopad", 
+                                 "convolve_s8_kernelnx1_stride1_nopad_clamping_pred",
                                    ]:
                 string += f"{str(params['kernel_h'])},"
             elif function_name in ["convolve_s8_kernelnxn_stridenxn_padnxn",
+                                    "convolve_s8_kernelnxn_stridenxn_padnxn_clamping_pred",
                                    ]:
                 string += f"{str(params['kernel_h'])},{str(params['stride_h'])},{str(params['padding_h'])},"
 
@@ -408,7 +420,12 @@ class Conv2d(basicOperator):
                     + f"(const q7_t*)weight{parsed_idx}Flash,{params['first_k_channel']},bias{parsed_idx},"
                 )
             else:
-                string += f"(const q7_t*) weight{parsed_idx},bias{parsed_idx},"
+                if enable_clamping_prediction:
+                    string += f"(const q7_t*) weight{parsed_idx},"
+                    string += f"tsteps{parsed_idx},tbounds{parsed_idx},"
+                    string += f"bias{parsed_idx},"
+                else:
+                    string += f"(const q7_t*) weight{parsed_idx},bias{parsed_idx},"
 
             # scales or multiplier and shift
             if (

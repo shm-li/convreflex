@@ -158,8 +158,6 @@ class StepStats:
             #             self.larger_than_val_clamp_under_freq, _, _ \
             self.smaller_than_val_clamp_under_freq, _, _, _ \
                     = self.__gen_val_cumulative_freq(self.val_under_clamp_count)
-        # print("ÄA", self.smaller_than_val_freq, self.val_min, self.val_max)
-        # print("ÄA", self.larger_than_val_freq, self.val_min, self.val_max)
         if self.total_under_clamp_sample == 0: return None, None
         best_val = None
         best_freq = 0
@@ -389,27 +387,6 @@ class ChannelStats:
 # }
 
 
-    # According to the profiled frequency of safe termination at each step,
-    #   select n best positions to make termination checks
-    def gen_best_check_pos(self, n=2):
-        # Create a cumulative probability distribution function
-        self.__gen_termination_probability()
-        prob_func = lambda x : self.per_step_termination_probability[x]
-        num_steps = self.per_neuron_steps
-
-        if n > num_steps: raise RuntimeError("Too many checks")
-        if n > 2: raise RuntimeError("Up to 2 checks supported by runtime lib")
-        
-        current_best_candidates, best_o = \
-            self.__find_n_points_to_maximize_omission(n, num_steps, prob_func)
-
-
-        self.best_check_pos = current_best_candidates
-        self.best_check_omission = best_o
-        # print("DIST:", self.per_step_termination_probability)
-        # print("BEST POS:", self.best_check_pos, self.best_check_omission)
-    
-
     # Only 1 check supported!!
     # TODO: figure out a way to estimate omission for checks >= 2.
     #       How does the first check's success rate affect checks behind it?
@@ -637,10 +614,6 @@ class LayerStats:
         return total
 
     
-    def gen_best_check_pos(self, n=2):
-        for ch in self.channels:
-            ch.gen_best_check_pos(n)
-
 # redundancy omitting with clamping prediction {
     def gen_best_predictive_check_pos(self, clamping_prediction_confidence):
         for ch in self.channels:
@@ -750,15 +723,9 @@ class ModelStats:
         return ret
     
 
-    def gen_best_check_pos(self, n=2):
-        for op in self.operators:
-            op.gen_best_check_pos(n)
-
-# redundancy omitting with clamping prediction {
     def gen_best_predictive_check_pos(self, clamping_prediction_confidence):
         for op in self.operators:
             op.gen_best_predictive_check_pos(clamping_prediction_confidence)
-# }
 
 
     def __has_operator(self, op_no: int):
@@ -848,22 +815,8 @@ class ProfilingStatsParser:
             sum_underflow_clamping_cnt, sum_clamped_neuron_cnt, 0 if (sum_clamped_neuron_cnt == 0) else (sum_underflow_clamping_cnt/sum_clamped_neuron_cnt*100),
             sum_overflow_clamping_cnt, sum_clamped_neuron_cnt, 0 if (sum_clamped_neuron_cnt == 0) else (sum_overflow_clamping_cnt/sum_clamped_neuron_cnt*100),
         ))
-            # print(op.idx, op.type, op.get_total_steps(), op.get_terminated_steps())
     
 
-    def gen_best_check_pos_file(self, n, fname):
-        self.model.gen_best_check_pos(n)
-        per_layer = []
-        for op in self.model.operators:
-            per_channel = []
-            for ch in op.channels:
-                per_channel.append(ch.best_check_pos)
-            per_layer.append(per_channel)
-        with open(fname, 'wb') as f:
-            pickle.dump(per_layer, f)
-
-
-# redundancy omitting with clamping prediction {
     def gen_best_predictive_check_pos_file(self, 
                                            clamping_prediction_confidence, 
                                            fname):
@@ -898,7 +851,6 @@ class ProfilingStatsParser:
                 "per_layer_threshold": per_layer_threshold,
                 "per_layer_type": per_layer_type,
             }, f)
-# }
 
 
     ################ Parsing functions ###############
@@ -912,10 +864,8 @@ class ProfilingStatsParser:
                     self.parse_op_line(line)
                 elif line.startswith('ch'):
                     self.parse_line(line)
-# redundancy omitting with clamping prediction {
                 elif line.startswith('tr'):
                     self.parse_comp_trace(line)
-# }
                 elif line.startswith('Label'):
                     self.parse_acc(line)
         self.__tmp_cur_working_op = None
@@ -970,7 +920,6 @@ class ProfilingStatsParser:
                                           effectless, safely_omittable)
     
 
-# redundancy omitting with clamping prediction {
     def parse_comp_trace(self, s: str):
         s = s.split("|")
         channel = int(s[0].split(" ")[1])
@@ -979,7 +928,6 @@ class ProfilingStatsParser:
         trace = [int(each) for each in s[3:]]
         self.__add_trace_to_cur_working_op(channel, clamp_type, output, trace)
         pass
-# }
     
 
     def parse_acc(self, s: str):
@@ -998,121 +946,55 @@ class ProfilingStatsParser:
                                   total, terminated,
                                   effectless, safely_omittable)
         
-# redundancy omitting with clamping prediction {
     def __add_trace_to_cur_working_op(self, ch, clamp_type, output, trace):
         self.model.add_trace_to_op(self.__tmp_cur_working_op, ch, 
                                    clamp_type, output, trace)
-# }
 
 
-# Example usage
 if __name__ == "__main__":
     fr = ProfilingStatsParser()
     base_path = sys.argv[1]
-    mode = sys.argv[2]
-    if mode == "display":
-        for i in range(352, 384):#320):
-        # for i in range(0, 32):
-            # print("Parsing profile data for input {:d}".format(i))
+    # mode = sys.argv[2]
+    # if mode == "display":
+    #     for i in range(320, 352):
+    #     # for i in range(0, 32):
+    #         # print("Parsing profile data for input {:d}".format(i))
+    #         file_path = base_path + "/out_{:d}".format(i)
+    #         fr.parse_profile(file_path)
+
+    #     fr.display_acc()
+    #     fr.display_stats()
+    #     # fr.display_dist()
+    # elif mode == "gen_pred":
+    clamping_pred_conf_int = int(sys.argv[3])
+    clamping_pred_conf = clamping_pred_conf_int / 1000
+    print("Running predictive mode with conf {:d} ({:f})".format(clamping_pred_conf_int, clamping_pred_conf))
+
+    # Try and use cached profiled data first
+    try: 
+        with open("{:s}_processed_cache.pkl".format(base_path), 'rb') as f:
+            print("Opening cached profile data...")
+            fr = pickle.load(f)
+    except Exception as e:
+        # print(e)
+        print("Cached profile data not found, generating...")
+        start_time = time.time()
+        # By default, use 32 profiling inputs
+        # By convention they are input no. 320 to no. 352!
+        #   The first 320 inputs reserved for acc eval
+        for i in range(320, 352):
             file_path = base_path + "/out_{:d}".format(i)
             fr.parse_profile(file_path)
-
-        fr.display_acc()
-        fr.display_stats()
-        # fr.display_dist()
-    elif mode == "gen_pos":
-        samples = ""
-        try: 
-            with open("profile_data{:s}_no.pkl".format(samples), 'rb') as f:
-                print("Opening cached profile data...")
-                fr = pickle.load(f)
-        except Exception as e:
-            print(e)
-            print("Cached profile data not found, generating...")
-            start_time = time.time()
-            for i in range(256, 288):#320, 352):#320 + 4):#352):#383):#352):
-            # for i in range(0, 32):
-                # print("Parsing profile data for input {:d}".format(i))
-                file_path = base_path + "/out_{:d}".format(i)
-                fr.parse_profile(file_path)
-            spent_time = time.time() - start_time
-            print("Spent {:f} seconds on reading profiling data".format(spent_time))
-            #TEST
-            # with open("profile_data{:s}.pkl".format(samples), 'wb') as f:
-            #     pickle.dump(fr, f)
-
-        fr.display_acc()
-        fr.display_stats()
-        #TEST
-        # fr.gen_best_check_pos_file(2, fr.model.name + ".pkl")
-    elif mode == "gen_pred":
-        clamping_pred_conf_int = int(sys.argv[3])
-        clamping_pred_conf = clamping_pred_conf_int / 1000
-        print("Running predictive mode with conf {:d} ({:f})".format(clamping_pred_conf_int, clamping_pred_conf))
-        samples = "_32"
-
-        # Try and use cached profiled data first
-        try: 
-            with open("profile_data{:s}.pkl".format(samples), 'rb') as f:
-                print("Opening cached profile data...")
-                fr = pickle.load(f)
-        except Exception as e:
-            print(e)
-            print("Cached profile data not found, generating...")
-            start_time = time.time()
-            for i in range(320, 352):#320 + 4):#352):#383):#352):
-            # for i in range(0, 32):
-                # print("Parsing profile data for input {:d}".format(i))
-                file_path = base_path + "/out_{:d}".format(i)
-                fr.parse_profile(file_path)
-            spent_time = time.time() - start_time
-            print("Spent {:f} seconds on reading profiling data".format(spent_time))
-            with open("profile_data{:s}.pkl".format(samples), 'wb') as f:
-                pickle.dump(fr, f)
-
-        fr.display_acc()
-        fr.display_stats()
-
-        start_time = time.time()
-        fr.gen_best_predictive_check_pos_file(clamping_pred_conf, fr.model.name 
-                            + "pred_{:d}{:s}.pkl".format(clamping_pred_conf_int, samples))
         spent_time = time.time() - start_time
-        print("Spent {:f} seconds on parsing profiling data".format(spent_time))
-        
-    elif mode == "test":
-        #with open("profile_data.pkl", 'rb') as f:
-        #    fr = pickle.load(f)
-        try: 
-            with open("profile_data_plot.pkl", 'rb') as f:
-                print("Opening cached profile data...")
-                fr = pickle.load(f)
-        except Exception as e:
-            print(e)
-            print("Cached profile data not found, generating...")
-            for i in range(320, 352):#383):#352):
-            # for i in range(0, 32):
-                # print("Parsing profile data for input {:d}".format(i))
-                file_path = "profile_sat_pred_plot_outputs" + "/out_{:d}".format(i)
-                fr.parse_profile(file_path)
-            with open("profile_data_plot.pkl", 'wb') as f:
-                pickle.dump(fr, f)
-        print("-----------------------")
-        for i in range(17):
-            #print("Channel 6 step {:d} val freq:".format(i))
-            print(dict(sorted(fr.model.operators[5].channels[6].steps[i].val_freq.items())), ",")
-        print("-----------------------")
-        for i in range(17):
-            #print("Channel 6 step {:d} val under clamp count:".format(i))
-            print(dict(sorted(fr.model.operators[5].channels[6].steps[i].val_under_clamp_count.items())), ",")
-        for i in range(17):
-            print(fr.model.operators[5].channels[6].steps[i].get_val_to_under_clamp_with_confidence(1.00))
-        
-        print(fr.model.operators[5].channels[6].steps[8].get_val_to_under_clamp_with_confidence(1.25))
+        print("Spent {:f} seconds on reading profiling data".format(spent_time))
+        with open("{:s}_processed_cache.pkl".format(base_path), 'wb') as f:
+            pickle.dump(fr, f)
 
+    fr.display_acc()
+    fr.display_stats()
 
-    # s = 2
-    # print(fr.model.operators[1].channels[0].steps[s].val_freq)
-    # print(fr.model.operators[1].channels[0].steps[s].val_under_clamp_count)
-    # print(fr.model.operators[1].channels[0].steps[s].val_over_clamp_count)
-    # print(fr.model.operators[1].channels[0].steps[s].get_val_to_under_clamp_with_prob(0.95))
-    # print(fr.model.operators[1].channels[0].steps[s].get_val_to_over_clamp_with_prob(0.95))
+    start_time = time.time()
+    fr.gen_best_predictive_check_pos_file(clamping_pred_conf, 
+                        "_shortcuts_{:s}_conf_{:d}.pkl".format(fr.model.name, clamping_pred_conf_int))
+    spent_time = time.time() - start_time
+    print("Spent {:f} seconds on parsing profiling data".format(spent_time))

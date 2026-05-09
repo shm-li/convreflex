@@ -354,6 +354,216 @@ tinyengine_status mul_broadcast_axis_1_2(
 	  const int32_t output_activation_min, const int32_t output_activation_max,
       int8_t* output_data);
 
+int8_t *mat_mult_kernel_s8_s16_one_column_clamping_pred(const int8_t *input_a,
+							const int16_t *input_b,
+                            const uint8_t *termination_steps,
+                            const int32_t *termination_bounds,
+							const uint16_t output_ch,
+							const int32_t *out_shift,
+							const int32_t *out_mult,
+							const int32_t out_offset,
+							const int16_t activation_min,
+							const int16_t activation_max,
+							const uint16_t num_col_a,
+							const int32_t *const output_bias,
+							int8_t *out_0);
+
+int8_t *mat_mult_kernel_s8_s16_one_column_clamping_pred_with_profile(const int8_t *input_a,
+							const int16_t *input_b,
+                            const uint8_t *termination_steps,
+                            const int32_t *termination_bounds,
+                            const int32_t in_offset,
+							const uint16_t output_ch,
+							const int32_t *out_shift,
+							const int32_t *out_mult,
+							const int32_t out_offset,
+							const int16_t activation_min,
+							const int16_t activation_max,
+							const uint16_t num_col_a,
+							const int32_t *const output_bias,
+							int8_t *out_0);
+
+int8_t *mat_mult_kernel_s8_s16_one_column_uint16_steps_clamping_pred(const int8_t *input_a,
+							const int16_t *input_b,
+                            const uint16_t *termination_steps,
+                            const int32_t *termination_bounds,
+							const uint16_t output_ch,
+							const int32_t *out_shift,
+							const int32_t *out_mult,
+							const int32_t out_offset,
+							const int16_t activation_min,
+							const int16_t activation_max,
+							const uint16_t num_col_a,
+							const int32_t *const output_bias,
+							int8_t *out_0);
+
+int8_t *mat_mult_kernel_s8_s16_one_column_uint16_steps_clamping_pred_with_profile(const int8_t *input_a,
+							const int16_t *input_b,
+                            const uint16_t *termination_steps,
+                            const int32_t *termination_bounds,
+                            const int32_t in_offset,
+							const uint16_t output_ch,
+							const int32_t *out_shift,
+							const int32_t *out_mult,
+							const int32_t out_offset,
+							const int16_t activation_min,
+							const int16_t activation_max,
+							const uint16_t num_col_a,
+							const int32_t *const output_bias,
+							int8_t *out_0);
+
+tinyengine_status convolve_1x1_s8_clamping_pred(const int8_t *input, const uint16_t input_x,
+		const uint16_t input_y, const uint16_t input_ch, const int8_t *kernel,
+		const uint8_t *termination_steps,
+		const int32_t *termination_bounds,
+		const int32_t *bias, const int32_t *output_shift,
+		const int32_t *output_mult, const int32_t out_offset,
+		const int32_t input_offset, const int32_t out_activation_min,
+		const int32_t out_activation_max, int8_t *output, const uint16_t output_x,
+		const uint16_t output_y, const uint16_t output_ch, int16_t *runtime_buf);
+
+tinyengine_status convolve_1x1_s8_uint16_steps_clamping_pred(const int8_t *input, const uint16_t input_x,
+		const uint16_t input_y, const uint16_t input_ch, const int8_t *kernel,
+		const uint16_t *termination_steps,
+		const int32_t *termination_bounds,
+		const int32_t *bias, const int32_t *output_shift,
+		const int32_t *output_mult, const int32_t out_offset,
+		const int32_t input_offset, const int32_t out_activation_min,
+		const int32_t out_activation_max, int8_t *output, const uint16_t output_x,
+		const uint16_t output_y, const uint16_t output_ch, int16_t *runtime_buf);
+
+tinyengine_status convolve_s8_kernel1_stride2_clamping_pred(const int8_t *input, const uint16_t input_x,
+		const uint16_t input_y, const uint16_t input_ch, const int8_t *kernel,
+		const uint8_t *termination_steps,
+		const int32_t *termination_bounds,
+		const int32_t *bias, const int32_t *output_shift,
+		const int32_t *output_mult, const int32_t out_offset,
+		const int32_t input_offset, const int32_t out_activation_min,
+		const int32_t out_activation_max, int8_t *output, const uint16_t output_x,
+		const uint16_t output_y, const uint16_t output_ch, int16_t *runtime_buf);
+
+tinyengine_status convolve_s8_kernel3_stride1_nopad_clamping_pred(
+        const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, const int8_t *kernel, 
+		const uint8_t *termination_steps,
+		const int32_t *termination_bounds,
+		const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf);
+
+tinyengine_status convolve_s8_kernel3_stride1_pad1_clamping_pred(
+		const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, const int8_t *kernel,
+		const uint8_t *termination_steps,
+		const int32_t *termination_bounds,
+		const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf, int8_t pad_value);
+
+tinyengine_status convolve_s8_kernel3_stride1_pad1_uint16_steps_clamping_pred(
+		const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, const int8_t *kernel, 
+		const uint16_t *termination_steps,
+		const int32_t *termination_bounds,
+		const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf, int8_t pad_value);
+
+tinyengine_status convolve_s8_kernel3_stride1_pad1_oddch_clamping_pred(
+		const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, const int8_t *kernel, 
+		const uint8_t *termination_steps,
+		const int32_t *termination_bounds,
+		const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf, int8_t pad_value);
+
+tinyengine_status convolve_s8_kernel3_stride2_padoffset1_oddch_clamping_pred(
+		const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, const int8_t *kernel, 
+		const uint8_t *termination_steps,
+		const int32_t *termination_bounds,
+		const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf, int8_t pad_value);
+
+tinyengine_status convolve_s8_kernel3_stride2_padoffset1_clamping_pred(
+		const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, const int8_t *kernel, 
+		const uint8_t *termination_steps,
+		const int32_t *termination_bounds,
+		const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf, int8_t pad_value);
+
+tinyengine_status convolve_s8_kernel3_stride2_padoffset1_uint16_steps_clamping_pred(
+		const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, const int8_t *kernel, 
+		const uint16_t *termination_steps,
+		const int32_t *termination_bounds,
+		const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf, int8_t pad_value);
+
+tinyengine_status convolve_s8_kernelnx1_stride1_nopad_clamping_pred(
+        const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, 
+        const uint16_t kernel_y, const int8_t *kernel, 
+		const uint8_t *termination_steps,
+		const int32_t *termination_bounds,
+        const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf);
+
+tinyengine_status convolve_s8_kernelnxn_stridenxn_padnxn_clamping_pred(
+		const int8_t *input, const uint16_t input_x, const uint16_t input_y,
+		const uint16_t input_ch, 
+		const uint16_t kernel_n,
+		const uint16_t stride_n,
+		const uint16_t pad_n,
+		const int8_t *kernel, 
+		const uint8_t *termination_steps,
+		int32_t *termination_bounds,
+		const int32_t *bias,
+		const int32_t *output_shift, const int32_t *output_mult,
+		const int32_t output_offset, const int32_t input_offset,
+		const int32_t output_activation_min,
+		const int32_t output_activation_max, int8_t *output,
+		const uint16_t output_x, const uint16_t output_y,
+		const uint16_t output_ch, int16_t *runtime_buf, int8_t pad_value
+);
 #include "fp_requantize_op.h"
 #include "genInclude.h"
 //#include "int8_bp_op.h"
