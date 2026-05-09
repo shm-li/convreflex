@@ -17,5 +17,7 @@ if __name__ == "__main__":
     )
 
     code_folder = "code_for_profiling"
+    if os.path.exists("./{:s}".format(code_folder)):
+        shutil.rmtree(code_folder)
     shutil.move("./codegen", "./{:s}".format(code_folder))
     os.remove("./lifecycle.png")

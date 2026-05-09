@@ -1,13 +1,14 @@
 #!/bin/bash
 
-SHORTCUT_OUTPUT_TO=_acc_eval_shortcut_outputs
+TARGET_EVAL_CODE_FOLDER=$1
+
+SHORTCUT_OUTPUT_TO=_acc_eval_${TARGET_EVAL_CODE_FOLDER}_outputs
 BASELINE_OUTPUT_TO=_acc_eval_baseline_outputs
 
 # Total: 320
 START_INPUT=0
 MAX_INPUT=319
 
-TARGET_EVAL_CODE_FOLDER=$1
 
 # Error handling
 if [ -z "${TARGET_EVAL_CODE_FOLDER}" ]; then
@@ -116,7 +117,7 @@ do
 done
 
 sc_acc=$(bc <<< "scale=4; ${sc_hit}/${cnt}*100")
-acc_diff=$(bc <<< "scale=4; ${acc}-${sc_acc}")
+acc_diff=$(bc <<< "scale=4; ${sc_acc}-${acc}")
 result="${result}, ${TARGET_EVAL_CODE_FOLDER} acc: ${sc_hit}/${cnt}=${sc_acc}%, diff: ${acc_diff}%"
 echo "${result}"
 

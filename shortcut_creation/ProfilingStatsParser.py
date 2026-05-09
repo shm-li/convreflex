@@ -953,7 +953,7 @@ class ProfilingStatsParser:
 
 if __name__ == "__main__":
     fr = ProfilingStatsParser()
-    base_path = sys.argv[1]
+    base_path = "_profile_outputs" #sys.argv[1]
     # mode = sys.argv[2]
     # if mode == "display":
     #     for i in range(320, 352):
@@ -966,7 +966,7 @@ if __name__ == "__main__":
     #     fr.display_stats()
     #     # fr.display_dist()
     # elif mode == "gen_pred":
-    clamping_pred_conf_int = int(sys.argv[3])
+    clamping_pred_conf_int = int(sys.argv[1])
     clamping_pred_conf = clamping_pred_conf_int / 1000
     print("Running predictive mode with conf {:d} ({:f})".format(clamping_pred_conf_int, clamping_pred_conf))
 

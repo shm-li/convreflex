@@ -19,5 +19,7 @@ if __name__ == "__main__":
         termination_check_file=termination_check_pos_file
     )
 
+    if os.path.exists("./{:s}".format(target_codegen_name)):
+        shutil.rmtree(target_codegen_name)
     shutil.move("./codegen", "./{:s}".format(target_codegen_name))
     os.remove("./lifecycle.png")
