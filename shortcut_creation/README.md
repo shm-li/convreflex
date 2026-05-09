@@ -3,9 +3,10 @@ Make sure you have run the example in [profiling](../profiling).
 
 You should run the shortcut creation process under a NN's working folder. For example, ST_HandPosture CNN (HPR, hand posture recognition):
 ```bash
-python ../../shortcut_creation/ProfilingStatsParser.py 1200
+python ../../shortcut_creation/ProfilingStatsParser.py gen_shortcuts 1200
 ```
 
+The first parameter ```gen_shortcuts```tells the script to run at shortcut creation mode (another mode displays the profiled data). 
 The parameter ```1200``` controls the shortcut selection. It is the confidence that the shortcuts make correct predictions about value clamping, estimated from the profiled data. For example, passing ```1000``` means ConvReflex will search for such shortcut triggering thresholds, that they ensures 100.0% correct clamping prediction in the profiled data. 
 
 Here, *conf* is set to ```1200```; this is a special usage of this parameter. ConvReflex creates shortcuts with stricter thresholds than ```1000```, such that only the first 100/120 proportion of the correct clamping predictions in the profiled data are treated as "actually correct", while the rest 20/120 are ignored. In other words, *1/6* of all the edge cases are not trusted. 

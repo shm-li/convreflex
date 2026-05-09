@@ -30,3 +30,5 @@ Follow the steps in [profiling](profiling) to gather profiling data of the basic
 Follow [shortcut_creation](shortcut_creation) to analyze the profiling data and create a shortcut configuration. 
 
 Follow [shortcut_evaluation](shortcut_evaluation) to evaluate the accuracy of the new model. 
+
+To see how the generated code performs, you can run the "evaluate created model on unseen data" example in [other_analysis](other_analysis). This executes the models on your local machine, and analyzes the percentage of the skipped computations based on the generated profiling data. 

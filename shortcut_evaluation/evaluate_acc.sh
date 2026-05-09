@@ -45,6 +45,7 @@ fi
 for i in $(seq ${START_INPUT} ${MAX_INPUT})
 do
     if [ -f ${BASELINE_OUTPUT_TO}/out_${i} ]; then
+        echo "Running baseline model: Skipping input number ${i} since ouptut file exists"
         continue
     fi
     # set the input number in source files
@@ -68,6 +69,7 @@ fi
 for i in $(seq ${START_INPUT} ${MAX_INPUT})
 do
     if [ -f ${SHORTCUT_OUTPUT_TO}/out_${i} ]; then
+        echo "Running shortcut-enabled model: Skipping input number ${i} since ouptut file exists"
         continue
     fi
     set_input_file_no $i

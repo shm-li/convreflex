@@ -366,12 +366,10 @@ class ChannelStats:
                 self.overflow_clamping_count += 1
         if termination_type != "None":
             if termination_type != clamping_type:
-                # Here it's not raising error, cuz dynamic bounds can cause it
-                # TODO: correctly reflect dynamic bounds being enabled
-                #  in profiling data, and handle the special case here
-                print("Warning: Unmatching type of clamping")
-                #raise RuntimeError("Unmatching type of clamping")
-        # print("ADDED", termination_type, clamping_type, total, terminated, effectless, safely_omittable)
+                # It's not always wrong--e.g. when the prediction of 
+                #   value clamping is not correct
+                pass
+                #print("Warning: Unmatching type of clamping")
         
 
 # redundancy omitting with clamping prediction {
@@ -953,48 +951,50 @@ class ProfilingStatsParser:
 
 if __name__ == "__main__":
     fr = ProfilingStatsParser()
-    base_path = "_profile_outputs" #sys.argv[1]
-    # mode = sys.argv[2]
-    # if mode == "display":
-    #     for i in range(320, 352):
-    #     # for i in range(0, 32):
-    #         # print("Parsing profile data for input {:d}".format(i))
-    #         file_path = base_path + "/out_{:d}".format(i)
-    #         fr.parse_profile(file_path)
-
-    #     fr.display_acc()
-    #     fr.display_stats()
-    #     # fr.display_dist()
-    # elif mode == "gen_pred":
-    clamping_pred_conf_int = int(sys.argv[1])
-    clamping_pred_conf = clamping_pred_conf_int / 1000
-    print("Running predictive mode with conf {:d} ({:f})".format(clamping_pred_conf_int, clamping_pred_conf))
-
-    # Try and use cached profiled data first
-    try: 
-        with open("{:s}_processed_cache.pkl".format(base_path), 'rb') as f:
-            print("Opening cached profile data...")
-            fr = pickle.load(f)
-    except Exception as e:
-        # print(e)
-        print("Cached profile data not found, generating...")
-        start_time = time.time()
-        # By default, use 32 profiling inputs
-        # By convention they are input no. 320 to no. 352!
-        #   The first 320 inputs reserved for acc eval
-        for i in range(320, 352):
+    mode = sys.argv[1]
+    if mode == "display":
+        base_path = sys.argv[2]
+        # By default, start from input no. 352+ since these are non-used inputs
+        for i in range(352, 384):
+        # for i in range(0, 32):
+            # print("Parsing profile data for input {:d}".format(i))
             file_path = base_path + "/out_{:d}".format(i)
             fr.parse_profile(file_path)
+
+        fr.display_acc()
+        fr.display_stats()
+        # fr.display_dist()
+    elif mode == "gen_shortcuts":
+        clamping_pred_conf_int = int(sys.argv[2])
+        clamping_pred_conf = clamping_pred_conf_int / 1000
+        base_path = "_profile_outputs" #sys.argv[1]
+        print("Running with conf {:d} ({:f})".format(clamping_pred_conf_int, clamping_pred_conf))
+
+        # Try and use cached profiled data first
+        try: 
+            with open("{:s}_processed_cache.pkl".format(base_path), 'rb') as f:
+                print("Opening cached profile data...")
+                fr = pickle.load(f)
+        except Exception as e:
+            # print(e)
+            print("Cached profile data not found, generating...")
+            start_time = time.time()
+            # By default, use 32 profiling inputs
+            # By convention they are input no. 320 to no. 352!
+            #   The first 320 inputs reserved for acc eval
+            for i in range(320, 352):
+                file_path = base_path + "/out_{:d}".format(i)
+                fr.parse_profile(file_path)
+            spent_time = time.time() - start_time
+            print("Spent {:f} seconds on reading profiling data".format(spent_time))
+            with open("{:s}_processed_cache.pkl".format(base_path), 'wb') as f:
+                pickle.dump(fr, f)
+
+        fr.display_acc()
+        fr.display_stats()
+
+        start_time = time.time()
+        fr.gen_best_predictive_check_pos_file(clamping_pred_conf, 
+                            "_shortcuts_{:s}_conf_{:d}.pkl".format(fr.model.name, clamping_pred_conf_int))
         spent_time = time.time() - start_time
-        print("Spent {:f} seconds on reading profiling data".format(spent_time))
-        with open("{:s}_processed_cache.pkl".format(base_path), 'wb') as f:
-            pickle.dump(fr, f)
-
-    fr.display_acc()
-    fr.display_stats()
-
-    start_time = time.time()
-    fr.gen_best_predictive_check_pos_file(clamping_pred_conf, 
-                        "_shortcuts_{:s}_conf_{:d}.pkl".format(fr.model.name, clamping_pred_conf_int))
-    spent_time = time.time() - start_time
-    print("Spent {:f} seconds on parsing profiling data".format(spent_time))
+        print("Spent {:f} seconds on parsing profiling data".format(spent_time))
