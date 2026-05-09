@@ -37,7 +37,7 @@ You can get the full data from [another Google Drive link](https://drive.google.
 
 Follow the steps in [profiling](profiling) to gather profiling data of the basic model.
 
-Follow [shortcut_creation](shortcut_creation) to analyze the profiling data and create a shortcut configuration. 
+Follow [shortcut_creation](shortcut_creation) to analyze the profiling data and create a shortcut configuration, and generate C code with the shortcuts.
 
 Follow [shortcut_evaluation](shortcut_evaluation) to evaluate the accuracy of the new model. 
 
