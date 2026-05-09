@@ -1,0 +1,3 @@
+[submodule "TinyEngine-backend/TinyEngine/third_party/CMSIS"]
+	path = TinyEngine-backend/TinyEngine/third_party/CMSIS
+	url = https://github.com/ARM-software/CMSIS_5.git
