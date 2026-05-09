@@ -1,0 +1,115 @@
+
+CODEGENDIR = .
+TEDIR = ../../TinyEngine-backend
+CMSIS_DIR = $(TEDIR)/TinyEngine/third_party/CMSIS/CMSIS
+CMSIS_NN_DIR = $(CMSIS_DIR)/NN
+CMSIS_DSP_DIR = $(CMSIS_DIR)/DSP
+
+IDIR = .
+ODIR = obj
+SOURCES := $(shell find ./ -name '*.c' -maxdepth 1)
+
+CODEGEN_IDIR = $(CODEGENDIR)/Include/
+CODEGEN_ODIR = obj/genModel
+CODEGEN_SOURCES := $(shell find $(CODEGENDIR)/Source/ ! -name 'genModel.c' -name '*.c' -maxdepth 1)
+
+TE_IDIR += $(TEDIR)/TinyEngine/include
+TE_ODIR = obj/TinyEngine
+TE_SOURCES := $(shell find $(TEDIR)/TinyEngine/src/kernels_v6m/int_forward_op -name '*.c' -maxdepth 1)
+TE_SOURCES += $(shell find $(TEDIR)/TinyEngine/src/kernels_v6m/int_forward_op_clamping_pred -name '*.c' -maxdepth 1)
+
+CMSIS_CORE_IDIR = $(CMSIS_DIR)/Core/Include  
+CMSIS_DSP_IDIR = $(CMSIS_DIR)/DSP/Include
+CMSIS_NN_IDIR = $(CMSIS_NN_DIR)/Include 
+CMSIS_NN_ODIR = obj/cmsis_nn
+CMSIS_NN_SOURCES := $(shell find $(CMSIS_NN_DIR)/Source -name '*.c' -maxdepth 2)
+
+GCC = gcc
+INC = -I$(IDIR) -I$(CODEGEN_IDIR) -I$(TE_IDIR) -I$(CMSIS_CORE_IDIR) -I$(CMSIS_NN_IDIR)  -I$(CMSIS_DSP_IDIR) 
+#CXXFLAGS += -DPRINT_OP_NUMBER
+
+CFLAGS = -O2 -g -std=c17
+CFLAGS += -fno-rtti -fno-exceptions -fno-threadsafe-statics
+CFLAGS += -fno-unwind-tables -ffunction-sections -fdata-sections -fmessage-length=0
+
+####################################################################
+# Enable this to run the profiling version of all kernels
+#  which generates lots of printing
+ifdef RUN_PROFILING
+	CFLAGS += -DCLAMPING_PRED_TEST
+endif
+
+# Enable this if you want to run the profie functions (-DRUN_PROFILING)
+#   but don't want to see profile trace, e.g. we used this when testing 
+#   if these profiling functions are correct
+ifdef NO_TRACE
+	CFLAGS += -DNO_TRACE_PRINT
+endif
+
+# Enable this if you don't want to see any layer/OP number prints
+#   e.g. "=== OP <no>, <layer type> ===".
+#   Maybe use this if running on a real board.
+# Note: this does not disable the prints in test_nn.c's main() function
+ifdef ON_BOARD_TEST
+	CFLAGS += -DON_BOARD_TEST
+endif
+
+# Enable this if you are running the baseline version.
+#  This will call invoke_inf() in the main function instead.
+# Note that all the code generated has both an invoke_inf() (baseline)
+#  and a invoke_inf_omitting_redundancy() (shortcut-enabled). 
+ifdef BASELINE
+	CFLAGS += -DRUN_BASELINE
+endif
+
+# Without any flag above, the compilation will by default compile the 
+#  shortcut-enabled code, without printing any profiling info, but prints
+#  the layer numbers to indicate progress. The default main function in 
+#  test_nn.c also prints the model, input number and prediction result.
+####################################################################
+
+DEPS := $(shell find $(IDIR) -name '*.h' -o -name '*.hh' -o -name '*.hpp' -maxdepth 1)
+
+CODEGEN_DEPS := $(shell find $(CODEGEN_IDIR) -name '*.h' -maxdepth 1)
+
+TE_DEPS := $(shell find $(TE_IDIR) -name '*.h' -maxdepth 1)
+
+CMSIS_NN_DEPS := $(shell find $(CMSIS_NN_DIR)/Include -name '*.h' -maxdepth 1)
+
+
+_OBJ = $(TARGET_NAME).o
+OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
+
+_CODEGEN_OBJ = $(CODEGEN_SOURCES:%.c=%.o)
+CODEGEN_OBJ := $(patsubst $(CODEGENDIR)/%, $(CODEGEN_ODIR)/%, $(_CODEGEN_OBJ))
+
+_TE_OBJ := $(TE_SOURCES:%.c=%.o)
+TE_OBJ := $(patsubst $(TEDIR)/%, $(TE_ODIR)/%, $(_TE_OBJ))
+
+_CMSIS_NN_OBJ := $(CMSIS_NN_SOURCES:%.c=%.o)
+CMSIS_NN_OBJ := $(patsubst $(CMSIS_NN_DIR)/%, $(CMSIS_NN_ODIR)/%, $(_CMSIS_NN_OBJ))
+
+$(ODIR)/%.o: %.c $(DEPS) $(INPUT_DEPS) $(RAP_DEPS)
+	@mkdir -p $(@D)
+	$(GCC) -c -o $@ $< $(INC) $(CFLAGS) 
+
+$(CODEGEN_ODIR)/%.o: $(CODEGEN_SOURCES) $(CODEGEN_DEPS)
+	@mkdir -p $(@D)
+	$(GCC) -c -o $@ $(CODEGENDIR)/$*.c $(INC) $(CFLAGS)
+
+$(TE_ODIR)/%.o: $(TE_SOURCES) $(TE_DEPS)
+	@mkdir -p $(@D)
+	$(GCC) -c -o $@ $(TEDIR)/$*.c $(INC) $(CFLAGS)
+
+$(CMSIS_NN_ODIR)/%.o: $(CMSIS_NN_SOURCES) $(CMSIS_NN_DEPS)
+	@mkdir -p $(@D)
+	$(GCC) -c -o $@ $(CMSIS_NN_DIR)/$*.c $(INC) $(CFLAGS) 
+
+$(TARGET_NAME): $(OBJ) $(CODEGEN_OBJ) $(CMSIS_NN_OBJ) $(TE_OBJ) 
+	$(GCC) $^ -o $@ $(INC) $(CFLAGS)
+
+.PHONY: clean
+
+clean:
+	rm -rf $(ODIR)/*
+	rm $(TARGET_NAME)
