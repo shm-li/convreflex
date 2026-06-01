@@ -1,6 +1,6 @@
 # ConvReflex: Efficient Ultra-Low-Power CNN Inference via Clamping Prediction
 
-ConvReflex is presented at SenSys '26: [https://doi.org/10.1145/3774906.3802781](https://doi.org/10.1145/3774906.3802781).
+ConvReflex is presented at SenSys '26: [https://doi.org/10.1145/3774906.3802781](https://doi.org/10.1145/3774906.3802781), [presentation slides here](assets/convreflex_presentation.pdf). 
 
 ## What is this?
 
